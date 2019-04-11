@@ -1,14 +1,10 @@
-# -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
-
 from buffers import ReplayBuffer
 from models import ActorNet, CriticNet
-
-
 
 class D4PG_Agent:
     """

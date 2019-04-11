@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import sys
 import numpy as np
 import time
@@ -13,8 +12,6 @@ from matplotlib.gridspec import GridSpec
 
 class Saver():
     """
-    Handles the saving of checkpoints and collection of data to do so. Generates
-    the savename and directory for each Agent session.
     PARAMS:
     prefix - usually the name of the framework of the agent being trained, but
             could be manually provided if desired.
@@ -32,10 +29,6 @@ class Saver():
                  load_file = None,
                  file_ext = ".agent"
                  ):
-        """
-        Initialize a Saver object.
-        """
-
         self.file_ext = file_ext
         self.save_dir, self.filename = self.generate_savename(prefix, save_dir)
         if load_file:
@@ -45,11 +38,6 @@ class Saver():
             print_bracketing(statement)
 
     def generate_savename(self, prefix, save_dir):
-        """
-        Generates an automatic savename for training files, will version-up as
-        needed.
-        """
-        
         check_dir(save_dir)
         timestamp = time.strftime("%Y%m%d", time.localtime())
         base_name = "{}_{}_v".format(prefix, timestamp)
@@ -65,10 +53,6 @@ class Saver():
         return save_dir, filename
 
     def save_checkpoint(self, agent, save_every):
-        """
-        Preps a checkpoint save file at intervals controlled by SAVE_EVERY.
-        """
-
         if not agent.episode % save_every == 0:
             return
         mssg = "Saving Agent checkpoint to: "
@@ -76,19 +60,11 @@ class Saver():
         self._save(agent, save_name, mssg)
 
     def save_final(self, agent):
-        """
-        Preps a final savefile after training has finished.
-        """
-
         mssg = "Saved final Agent weights to: "
         save_name = "{}_eps{:04d}_FINAL".format(self.filename, agent.episode-1)
         self._save(agent, save_name, mssg)
 
     def _save(self, agent, save_name, mssg):
-        """
-        Does the actual saving bit.
-        """
-
         full_name = os.path.join(self.save_dir, save_name).replace('\\','/')
         full_name += self.file_ext
         statement = mssg + full_name
@@ -97,10 +73,6 @@ class Saver():
         torch.save(self._get_save_dict(agent), full_name)
 
     def _get_save_dict(self, agent):
-        """
-        Prep a dictionary of data from the current Agent.
-        """
-
         checkpoint = {'state_size': agent.state_size,
                       'action_size': agent.action_size,
                       'actor_dict': agent.actor.state_dict(),
@@ -109,10 +81,6 @@ class Saver():
         return checkpoint
 
     def _load_agent(self, load_file, agent):
-        """
-        Loads a checkpoint from an earlier trained agent.
-        """
-
         checkpoint = torch.load(load_file, map_location=lambda storage, loc: storage)
         agent.actor.load_state_dict(checkpoint['actor_dict'])
         agent.critic.load_state_dict(checkpoint['critic_dict'])
@@ -145,9 +113,6 @@ class Logger:
                  agent=None,
                  args=None,
                  save_dir = '.'):
-        """
-        Initialize a Logger object.
-        """
 
         if agent==None or args==None:
             print("Blank init for Logger object.")
@@ -180,10 +145,6 @@ class Logger:
         return self.scores[-1]
 
     def log(self, rewards, agent):
-        """
-        After each timestep, keep track of loss and reward data.
-        """
-
         self.rewards += rewards
         if self.eval:
             return
@@ -213,9 +174,6 @@ class Logger:
             self._print_status(eps_num, agent)
 
     def _print_status(self, eps_num, agent):
-        """
-        Print status info to the command line.
-        """
         leader = "..."
         # TIME INFORMATION
         eps_time, total_time, remaining = self._runtime(eps_num)
@@ -231,12 +189,7 @@ class Logger:
         print("Avg RETURN over previous {} episodes: {:.4f}\n".format(
                 self.print_every, np.array(prev_scores).mean()))
 
-
     def load_logs(self):
-        """
-        Loads data from on-disk log files, for later manipulation and plotting.
-        """
-
         with open(self.scoresfile, 'r') as f:
             self.slines = np.array([float(i) for i in f.read().splitlines()])
         with open(self.alossfile, 'r') as f:
@@ -265,20 +218,12 @@ class Logger:
         self.sess_params = sess_params
 
     def _moving_avg(self, data, avg_across):
-        """
-        Averages a curve, interpolates at boundaries.
-        """
-
         avg_across = int(avg_across)
         window = np.ones(avg_across)/avg_across
         data = np.pad(data, avg_across, mode="mean", stat_length=5)
         return np.convolve(data, window, 'same')[avg_across:-avg_across]
 
     def plot_logs(self, save_to_disk=True):
-        """
-        Plots data in a matplotlib graph for review and comparison.
-        """
-
         score_x = np.linspace(1, len(self.slines), len(self.slines))
         actor_x = np.linspace(1, len(self.alines), len(self.alines))
         critic_x = np.linspace(1, len(self.clines), len(self.clines))
@@ -418,9 +363,6 @@ class Logger:
         self.plot_logs(save_to_disk)
 
     def _init_logs(self, params):
-        """
-        Outputs an initial log of all parameters provided as a list.
-        """
 
         basename = os.path.join(self.log_dir, self.filename)
         self.paramfile = basename + "_LOG.txt"
@@ -526,40 +468,23 @@ class Logger:
         #     print("C LOSS: ", self.critic_loss)
 
     def _write_losses(self):
-        """
-        Writes actor/critic loss data to file.
-        """
-
         with open(self.alossfile, 'a') as f:
             f.write(str(self.actor_loss) + '\n')
         with open(self.clossfile, 'a') as f:
             f.write(str(self.critic_loss) + '\n')
 
     def _write_scores(self):
-        """
-        Writes score data to file.
-        """
-
         with open(self.scoresfile, 'a') as f:
             f.write(str(self.latest_score) + '\n')
 
     def _reset_rewards(self):
-        """
-        Resets the REWARDS matrix to zero for starting an episode.
-        """
-
         self.rewards = np.zeros(self.agent_count)
 
 
-
 def gather_args(manual_args=None):
-    """
-    Generate arguments passed from the command line.
-    """
     parser = argparse.ArgumentParser(description="Continuous control environment for \
             Udacity DeepRL course.",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
     parser.add_argument("-alr", "--actor_learn_rate",
             help="Actor Learning Rate.",
             type=float,
@@ -622,14 +547,14 @@ def gather_args(manual_args=None):
             help="How many timesteps to explore each episode, if a \
                   Terminal state is not reached first",
             type=int,
-            default=1000)
+            default=10) #1000
     parser.add_argument("-ng", "--nographics",
             help="Run Unity environment without graphics displayed.",
             action="store_true")
     parser.add_argument("-num", "--num_episodes",
             help="How many episodes to train?",
             type=int,
-            default=225)
+            default=3) #225
     parser.add_argument("-pre", "--pretrain",
             help="How many trajectories to randomly sample into the \
                   ReplayBuffer before training begins.",
@@ -674,6 +599,7 @@ def gather_args(manual_args=None):
             type=str,
             default="saves")
     args = parser.parse_args(manual_args)
+    print("args=", args)
 
     ############################################################################
     #             PROCESS ARGS AFTER COMMAND LINE GATHERING                    #
@@ -698,8 +624,6 @@ def gather_args(manual_args=None):
     args.load_file = _get_agent_file(args)
 
     return args
-
-
 
 def _get_agent_file(args):
     """
@@ -726,8 +650,6 @@ def _get_agent_file(args):
     else:
         return False
 
-
-
 def _get_files(save_dir):
     """
     Returns a list of files in a given directory, sorted by last-modified.
@@ -739,8 +661,6 @@ def _get_files(save_dir):
             if file.endswith(".agent"):
                 file_list.append(os.path.join(root, file))
     return sorted(file_list, key=lambda x: os.path.getmtime(x))
-
-
 
 def _get_filepath(files):
     """
